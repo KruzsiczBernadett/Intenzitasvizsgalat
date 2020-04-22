@@ -44,24 +44,27 @@
             legend1.Name = "Legend1";
             this.chart_levels.Legends.Add(legend1);
             this.chart_levels.Location = new System.Drawing.Point(0, 0);
+            this.chart_levels.Margin = new System.Windows.Forms.Padding(4);
             this.chart_levels.Name = "chart_levels";
             series1.ChartArea = "ChartArea1";
             series1.Legend = "Legend1";
             series1.Name = "Series1";
             this.chart_levels.Series.Add(series1);
-            this.chart_levels.Size = new System.Drawing.Size(800, 450);
+            this.chart_levels.Size = new System.Drawing.Size(1924, 1055);
             this.chart_levels.TabIndex = 0;
             this.chart_levels.Text = "chart_Levels";
+            this.chart_levels.Click += new System.EventHandler(this.chart_levels_Click);
             // 
             // Form_Levels
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(800, 450);
+            this.ClientSize = new System.Drawing.Size(1924, 1055);
             this.Controls.Add(this.chart_levels);
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
+            this.Margin = new System.Windows.Forms.Padding(4);
             this.Name = "Form_Levels";
-            this.Text = "Levels";
+            this.Text = "Intensities";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Form_Levels_FormClosing);
             this.Load += new System.EventHandler(this.Form_Levels_Load);
             ((System.ComponentModel.ISupportInitialize)(this.chart_levels)).EndInit();

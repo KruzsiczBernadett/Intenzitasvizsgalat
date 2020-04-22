@@ -22,24 +22,46 @@ namespace Charts
         {
             Kirajzol();
         }
-
-        public void Kirajzol()
+      
+        public void Kirajzol()      //metódus ??
         {
+
+
             chart_levels.Series.Clear();
             var series1 = new System.Windows.Forms.DataVisualization.Charting.Series
             {
-                Name = "Level",
+                Name = "Elfolyo_Intenzitasok",
                 Color = System.Drawing.Color.Green,
                 IsVisibleInLegend = false,
                 IsXValueIndexed = true,
-                ChartType = SeriesChartType.Line
+                ChartType = SeriesChartType.Column
+
             };
 
             this.chart_levels.Series.Add(series1);
 
-            for (int i = 0; i < Program.levels.Count; i++)
+            for (int i = 0; i < Program.eredmeny.Count; i++)
             {
-                series1.Points.AddXY(Program.levels[i].Level_value, Program.levels[i].Energy);
+                series1.Points.AddXY(Program.eredmeny[i].Ei, Program.eredmeny[i].Elfolyo_intensity_ossz);
+            }
+            chart_levels.Invalidate();
+
+
+            var series2 = new System.Windows.Forms.DataVisualization.Charting.Series
+            {
+                Name = "Rafolyo_Intenzitasok",
+                Color = System.Drawing.Color.MediumPurple,
+                IsVisibleInLegend = false,
+                IsXValueIndexed = true,
+                ChartType = SeriesChartType.Column
+            };
+
+            this.chart_levels.Series.Add(series2);
+
+            for (int i = 0; i < Program.eredmeny.Count; i++)
+            {
+                series2.Points.AddXY(Program.eredmeny[i].Ei, Program.eredmeny[i].Rafolyo_intensity_ossz);
+             
             }
             chart_levels.Invalidate();
         }
@@ -49,10 +71,16 @@ namespace Charts
             this.Hide();
             e.Cancel = true;
         }
+  
 
         private void button_Close_Click(object sender, EventArgs e)
         {
             this.Hide();
+        }
+
+        private void chart_levels_Click(object sender, EventArgs e)
+        {
+
         }
     }
 }

@@ -25,8 +25,15 @@ namespace Charts
 
         private void button_Betolt_Click(object sender, EventArgs e)
         {
+            data_Columns.Rows.Clear();
+            Program.energy.Clear();
+            Program.eredmeny.Clear();
+            Program.levels.Clear();
+            comboBox.Items.Clear();
             if (openFileDialog1.ShowDialog() == DialogResult.OK)
             {
+               
+
                 adatforras = openFileDialog1.FileName;
                 label_fajl.Text = adatforras;
                 label_Utolso_modositas_datum.Text = "Utolsó módosítás: " + File.GetCreationTime(adatforras).ToString("yyyy-MM-dd");
@@ -34,14 +41,6 @@ namespace Charts
                 data_Columns.Rows.Clear();
                 if (Beolvas(adatforras))
                 {
-                    /* --tanarur
-                    foreach (Levels item in Program.levels)
-                     {
-                         int sor_index = data_Columns.Rows.Add();
-                         data_Columns.Rows[sor_index].Cells["Level"].Value = Program.levels[sor_index].Level_value;
-                         data_Columns.Rows[sor_index].Cells["Energy"].Value = Program.levels[sor_index].Energy;
-
-                     }*/
                     //Ei Jpi_i ->  Jpi_f Energy          Intensity Alpha     Delta Mult
 
                     foreach (Energiaszintek item in Program.energy)
@@ -58,121 +57,99 @@ namespace Charts
                     //-- Megrajzolja a grafikont ----------------
                     Program.form_chart_level.Kirajzol();
 
-                    /// combobox probálkozás
-                    comboBox.Items.Add("Mindet megjelenít");
-                    comboBox.Items.Add(Program.energy[0].Ei);
-                   
-                    
-                    for (int i = 1; i < index; i++)
+                    //-- eredmények előkészítésa---
+                    int ei = Program.energy[0].Ei;
+                    string jpi = Program.energy[0].Jpi_i;
+                    double sum_intensity = Program.energy[0].Intensity;
+                    Eredmenyek uj = new Eredmenyek();
+                    List<Folyo> elfolyok = new List<Folyo>();
+                    elfolyok.Add(new Folyo(Convert.ToInt32(Program.energy[0].Energy), Program.energy[0].Intensity));
+                    //--- eredmények osztály feltöltése, intenztitás összegek kiszámítása---
+                    for (int i = 1; i < Program.energy.Count; i++)
                     {
-                        if (Program.energy[i - 1].Ei != Program.energy[i].Ei)
+                        if (ei != Program.energy[i].Ei)
                         {
-                            comboBox.Items.Add(Program.energy[i].Ei);
-                            
+                            uj.Ei = ei;
+                            uj.Jpi_i = jpi;
+                            uj.Elfolyok = elfolyok;
+                            uj.Elfolyo_intensity_ossz = sum_intensity;
+                            Program.eredmeny.Add(uj);
+                            //-- kinullázás
+                            ei = Program.energy[i].Ei;
+                            jpi = Program.energy[i].Jpi_i;
+                            sum_intensity = Program.energy[i].Intensity;
+                            elfolyok = new List<Folyo>();
+                            elfolyok.Add(new Folyo(Convert.ToInt32(Program.energy[i].Energy), Program.energy[i].Intensity));    //hozzátéve, minden ciklus első eleme miatt
+                            uj = new Eredmenyek();
+                            uj.Ei = ei;
+                            uj.Jpi_i = jpi;
                         }
+                        else
+                        {
+                            sum_intensity += Program.energy[i].Intensity;
+                            elfolyok.Add(new Folyo(Convert.ToInt32(Program.energy[i].Energy), Program.energy[i].Intensity));
+                        }
+
                     }
-                    /// még nincs megadva, hogy mit jelenit meg mindent megjelenít esetben
-                    /// 
-                    int[] azonen = new int[comboBox.Items.Count - 1];
-                    azonen[0] = Program.energy[0].Ei;
-                    for (int i = 1; i < azonen.Length; i++)
+                    //--> az utolsó miatt kell:
+                    uj.Ei = ei;
+                    uj.Jpi_i = jpi;
+                    uj.Elfolyok = elfolyok;
+                    uj.Elfolyo_intensity_ossz = sum_intensity;
+                    Program.eredmeny.Add(uj);
+
+                    //--- Ráfolyó intenzitások feltöltése eredmények classba, és az intenztitások összegzése---
+                    foreach (Eredmenyek item in Program.eredmeny)
                     {
-                        if (Program.energy[i - 1].Ei != Program.energy[i].Ei)
-                        {
-                           
-                            azonen[i] = Program.energy[i].Ei;
-                        }
-                      
+                        item.Rafolyok = Rafolyo_intenzitasok_lista(item.Ei, item.Jpi_i);
+                        item.Rafolyo_intensity_ossz = item.Rafolyok.Sum(a => a.Intensity);
                     }
 
-                    //---- 
-
-                    //nivorol elfolyo intenzitas osszegek kiszamitasa es eltarolasa ezt a részt nem tudom hová kéne tenni, így azt sem tudom, 
-                    //hogy jó-e ténylegesen az elve. ill., hogy az osszeget milyen típusu adatként kellene eltárolnii, hogy a gridben is látható lehgyen,
-                    //és ki tudjam iratni a kiválasztottat  ----
-
-
-
-
-                    double elf = 0.00;
-                    double raf = 0.00;
-                    int f = 0;
-
-
-                   /* --- ez jó az elfolyó intenzitásokra!! ---*/
-                    for (int j = 0; j < azonen.Length; j++)
-                    {  
-                        while (azonen[j]== Program.energy[f].Ei)
-                        {
-                         elf += Program.energy[f].Intensity;     //103Rh fájl-ra nem jó
-                        }
-                     Program.eredmeny.Add(new Eredmenyek(azonen[j], elf));
-                     elf = 0;
-                    }
-
-                  /*  for (int j = 1; j < azonen.Length; j++)
+                    //--- intenzitás összegek összehasonlítása---
+                    foreach (var item in Program.eredmeny)
                     {
-                        for (int i = 0; i < Program.energy.Count; i++)
-                        { if (azonen[j] == Program.energy[i].Ei) //--- átgondol
-                            {
-                                for (int k = 0; k < Program.energy.Count; k++)
-                                {
-                                    if (Program.energy[i].Jpi_i == Program.energy[k].Jpi_f || Program.energy[k].Ei - Math.Round(Program.energy[k].Energy) == Program.energy[i].Ei)
-                                    {
-                                        //if (Program.energy[k].Ei - Math.Round(Program.energy[k].Energy) == Program.energy[i].Ei)          
-                                        //{
-                                            raf += Program.energy[k].Intensity;
-                                       // }
-                                    }
-                                }
-                            }
+                        if (item.Rafolyo_intensity_ossz > item.Elfolyo_intensity_ossz)
+                        {
+                            item.Kulonbseg = item.Rafolyo_intensity_ossz - item.Elfolyo_intensity_ossz;
+                            item.Intenzitas_eredmeny_osszegzes = "Valószínűleg nem találta meg a kiválasztott energiaszintről az összes elfolyó gamma-sugárzást!";
                         }
-                        Program.eredmeny2.Add(new Eredmenyek2(azonen[j], raf));
-                        raf = 0;
+                        else {
+                            item.Kulonbseg = item.Elfolyo_intensity_ossz - item.Rafolyo_intensity_ossz;
+                            item.Intenzitas_eredmeny_osszegzes = "Nagy valószínűséggel megtalálta a kiválasztott energiaszint összes gamma-sugárzását!";
+                        }
                     }
-                    */
 
-
-
-
-
-                    /// ráeső gammák intenzitás összegének számítása
-                    /// kiválasztott Ei-hez tartozok
-
-                    // tfh. az első,vagyis Ei[0]-ra nézzük.
-
-                    /*
-                     for (int i = 0; i < Program.energy.Count; i++)
-                     {
-                         if(Program.energy[0].Jpi_i==Program.energy[i].Jpi_f)
-                         {
-                            if( Program.energy[i].Ei-Math.Round(Program.energy[i].Energy) == Program.energy[0].Ei)           // kérdéses számomra h a különbség, mivel int-double, mit ad? nekünk int kellene. a double-t kéne kerekíteni. vagy jó ez a kerekítés?
-                             {
-                                 raeso_int_ossz0 += Program.energy[i].Intensity;
-                             }
-                         }
-                     }
-                     */
-                    /// általánosítás
-                    /// ehhez raeso_int_ossz0-t tombbe kell alakitani
-                    /// kell mégegy for
-
-
+                    //--- comboBox feltöltése---
+                    //comboBox.Items.Add("Mindet megjelenít");
+                    foreach (var item in Program.eredmeny)
+                    {
+                        comboBox.Items.Add(item.Ei.ToString());
+                    }
 
                 }
             }
         }
 
-
-
-
-
-
+        private List<Folyo> Rafolyo_intenzitasok_lista(int vizsgalt_ei, string spi) 
+        {
+            List<Folyo> ra = new List<Folyo>();
+            foreach (Energiaszintek item in Program.energy.FindAll(a => !string.IsNullOrEmpty(a.Jpi_f) && a.Jpi_f.Equals(spi)))
+            {
+                int epsz = 1; //-- kerekítési hiba
+                int ra_energy = item.Ei - Convert.ToInt32(item.Energy);
+                if (ra_energy >= vizsgalt_ei-epsz && ra_energy <= vizsgalt_ei+epsz)
+                {
+                    ra.Add(new Folyo(Convert.ToInt32(item.Energy), item.Intensity));
+                }
+            }
+            return ra;
+        }
+                     
         bool Beolvas(string forras)
         {
             int page = 1;
             bool feldolgozni = false;
-            bool feld_energy = false;
+            
             try
             {
                 using (StreamReader sr = new StreamReader(forras))
@@ -212,15 +189,15 @@ namespace Charts
                                     //--    List of transitions --------
                                     Program.energy.Add(new Energiaszintek(line));
                                     break;
-                                case 3:
-                                    //--    Test of Gamma-ray and Level Energies
-                                    break;
-                                case 4:
-                                    //--    Test of Gamma-ray Energy Sums
-                                    break;
-                                case 5:
-                                    //--    Test of Gamma Ray Intensity Sums
-                                    break;
+                                //case 3:
+                                //    //--    Test of Gamma-ray and Level Energies
+                                //    break;
+                                //case 4:
+                                //    //--    Test of Gamma-ray Energy Sums
+                                //    break;
+                                //case 5:
+                                //    //--    Test of Gamma Ray Intensity Sums
+                                //    break;
                                 default:
                                     break;
                             }
@@ -234,11 +211,7 @@ namespace Charts
                 MessageBox.Show(ex.Message);
                 return false;
             }
-        }
-
-
-
-
+        }       //Metódus?
 
         private void Form1_Load(object sender, EventArgs e)
         {
@@ -250,6 +223,7 @@ namespace Charts
             openFileDialog1.CheckFileExists = true;
             openFileDialog1.CheckPathExists = true;
             openFileDialog1.Filter = "measurement data (*.dat)|*.dat|txt files (*.txt)|*.txt|All files (*.*)|*.*";
+            openFileDialog1.ValidateNames = false;
 
             data_Columns.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
             data_Columns.ColumnHeadersDefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
@@ -259,43 +233,28 @@ namespace Charts
             data_Columns.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.Single;
             data_Columns.MultiSelect = false;
             data_Columns.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+   
 
             //--Savefiledialog proba
-            saveFileDialog1.InitialDirectory = Directory.GetCurrentDirectory() + @"..\..";
+            saveFileDialog1.InitialDirectory = @"..\..";
             saveFileDialog1.RestoreDirectory = true;
             saveFileDialog1.Title = "Eredmények mentése";
-            saveFileDialog1.DefaultExt = "csv";
-            saveFileDialog1.FileName = "eredmeny";
-            saveFileDialog1.Filter = "result data (*.csv)|*.csv|txt files (*.txt)|*.txt|All files (*.*)|*.*";
+            saveFileDialog1.DefaultExt = "txt";
+            saveFileDialog1.FileName = "*.txt";
+            saveFileDialog1.Filter = "txt files (*.txt)|*.txt|All files (*.*)|*.*";
             saveFileDialog1.CheckFileExists = true;
             saveFileDialog1.CheckPathExists = true;
 
-            //-- Az id oszlop --------------------------------------------------
-            /* -- tanarur 
-            DataGridViewColumn column_x = new DataGridViewColumn();
-             {
-                 column_x.Name = "Level";
-                 column_x.DataPropertyName = "Level";
-                 column_x.CellTemplate = new DataGridViewTextBoxCell();
-             }
-             data_Columns.Columns.Insert(0, column_x);
-
-             DataGridViewColumn column_y = new DataGridViewColumn();
-             {
-                 column_y.Name = "Energy";
-                 column_y.DataPropertyName = "Energy";
-                 column_y.CellTemplate = new DataGridViewTextBoxCell();
-             }
 
 
-
-             data_Columns.Columns.Insert(1, column_y);*/
+            //--- A beolvasott adatok megjelenítésére szolgáló oszlopok előkészítése ---
 
             DataGridViewColumn column_x = new DataGridViewColumn();
             {
                 column_x.Name = "Nívószint";
                 column_x.DataPropertyName = "Nívószint";
                 column_x.CellTemplate = new DataGridViewTextBoxCell();
+                
             }
             data_Columns.Columns.Insert(0, column_x);
 
@@ -359,77 +318,7 @@ namespace Charts
 
 
 
-            // eredmenyeket kiirato tablazat probalkozas
-
-
-            DataGridViewColumn column_a = new DataGridViewColumn();
-            {
-                column_a.Name = "Nívószint";
-                column_a.DataPropertyName = "Nívószint";
-                column_a.CellTemplate = new DataGridViewTextBoxCell();
-            }
-            dataGridView_Eredmenyek.Columns.Insert(0, column_a);
-
-            DataGridViewColumn column_b = new DataGridViewColumn();
-            {
-                column_b.Name = "Jpi_i";
-                column_b.DataPropertyName = "Jpi_i";
-                column_b.CellTemplate = new DataGridViewTextBoxCell();
-            }
-
-            dataGridView_Eredmenyek.Columns.Insert(1, column_b);
-
-
-
-            DataGridViewColumn column_c = new DataGridViewColumn();
-            {
-                column_c.Name = "Ráfolyó Energia";
-                column_c.DataPropertyName = "Ráfolyó Energia";
-                column_c.CellTemplate = new DataGridViewTextBoxCell();
-            }
-            dataGridView_Eredmenyek.Columns.Insert(2, column_c);
-
-            DataGridViewColumn column_d = new DataGridViewColumn();
-            {
-                column_d.Name = "Ráfolyó Intenzitás";
-                column_d.DataPropertyName = "Ráfolyó Intenzitás";
-                column_d.CellTemplate = new DataGridViewTextBoxCell();
-            }
-            dataGridView_Eredmenyek.Columns.Insert(3, column_d);
-
             
-                 DataGridViewColumn column_gr = new DataGridViewColumn();
-            {
-                column_gr.Name = "Ráfolyó Intenzitás Összeg";
-                column_gr.DataPropertyName = "Ráfolyó Intenzitás Összeg";
-                column_gr.CellTemplate = new DataGridViewTextBoxCell();
-            }
-            dataGridView_Eredmenyek.Columns.Insert(4, column_gr);
-
-            DataGridViewColumn column_e = new DataGridViewColumn();
-            {
-                column_e.Name = "Elfolyó Energia";
-                column_e.DataPropertyName = "Elfolyó Energia";
-                column_e.CellTemplate = new DataGridViewTextBoxCell();
-            }
-            dataGridView_Eredmenyek.Columns.Insert(5, column_e);
-
-            DataGridViewColumn column_f = new DataGridViewColumn();
-            {
-                column_f.Name = "Elfolyó Intenzitás";
-                column_f.DataPropertyName = "Elfolyó Intenzitás";
-                column_f.CellTemplate = new DataGridViewTextBoxCell();
-            }
-            dataGridView_Eredmenyek.Columns.Insert(6, column_f);
-
-            DataGridViewColumn column_pr = new DataGridViewColumn();
-            {
-                column_pr.Name = "Elfolyó Intenzitás Összeg";
-                column_pr.DataPropertyName = "Elfolyó Intenzitás Összeg";
-                column_pr.CellTemplate = new DataGridViewTextBoxCell();
-            }
-            dataGridView_Eredmenyek.Columns.Insert(7, column_pr);
-
 
         }
 
@@ -440,69 +329,109 @@ namespace Charts
 
         private void comboBox_SelectedIndexChanged(object sender, EventArgs e)
         {
-            // nem tudom még hogyan választok ki konkrétat, de valahol itt lesz majd a feltöltés gondolom
+            // Program.energy[].Ei  --> ehhez iratjuk ki az eredményeket            
 
-
-            // Program.energy[].Ei  --> ehhez keressük a elfolyó intenzitásokat
-            dataGridView_Eredmenyek.Rows.Clear();
-            int kivalaszt = int.Parse(comboBox.Text);
-            int kiv = 0;
-            for (int i = 0; i < Program.eredmeny.Count; i++)
-            {
-
-
-                if (kivalaszt == Program.eredmeny[i].Ei1)
-                {
-                    kiv = i;
-                    continue;
-                }
-           }
-            for (int k = 0; k < Program.energy.Count; k++)
-            {
-               if (kivalaszt == Program.energy[k].Ei)
-                {
-                    int i = dataGridView_Eredmenyek.Rows.Add();
-                    dataGridView_Eredmenyek.Rows[i].Cells["Nívószint"].Value =Program.energy[k].Ei;
-                    dataGridView_Eredmenyek.Rows[i].Cells["Jpi_i"].Value = Program.energy[k].Jpi_i;
-                    dataGridView_Eredmenyek.Rows[i].Cells["Elfolyó Energia"].Value = Program.energy[k].Energy;
-                    dataGridView_Eredmenyek.Rows[i].Cells["Elfolyó Intenzitás"].Value = Program.energy[k].Intensity;
-                    dataGridView_Eredmenyek.Rows[i].Cells["Elfolyó Intenzitás Összeg"].Value = Program.eredmeny[kiv].Elfolyo_int_ossz;
-                    dataGridView_Eredmenyek.Rows[i].Cells["Ráfolyó Intenzitás"].Value = Program.energy[kiv].Intensity;
-                    dataGridView_Eredmenyek.Rows[i].Cells["Ráfolyó Energia"].Value = Program.energy[kiv].Energy;
-                 //   dataGridView_Eredmenyek.Rows[i].Cells["Ráfolyó Intenzitás Összeg"].Value = Program.eredmeny2[kiv].Rafolyo_int_ossz;
-                }
-
-            }
-
-
-           
-
-
-
-            
-
-           
-           
-
-
-
+          kivalaszt_kiir();
+                /// nem tudok görgetni az eredményekmél
+                                                                   
         }
+        //private void kivalasztas()
+        //{
+        //    List<Folyo> kivalasztott = new List<Folyo>();
+        //    int kivalaszt = int.Parse(comboBox.Text);
+        //    Eredmenyek kiv = Program.eredmeny.Find(a => a.Ei == kivalaszt);
+        //    string kiv_ei = "Nívószint:" + kiv.Ei;
+        //    string kiv_jpi = "Nívószint spin-paritás értéke:" + kiv.Jpi_i;
+        //    string kiv_int_kul = "Intenzitás összegek Különbsége:" + kiv.Kulonbseg;
+        //    string kiv_konkl = "Konklúzió:" + kiv.Intenzitas_eredmeny_osszegzes;
+        //    //string[] kiv_elf_en = "Energia:" + item.Energy;
+        //    //string[] kiv_elf_int = "Intenzitás:" + item.Intensity;
+            
+        //    string kiv_elf_int_ossz = "Elfolyó intenzitások összege:" + kiv.Elfolyo_intensity_ossz;
+        //    //string kiv_raf_en = "Energia:" + item.Energy;
+        //    //string kiv_raf_int = "Intenzitás:" + item.Intensity;
+        //    string kiv_raf_int_ossz = "Ráfolyó intenzitások összege:" + kiv.Rafolyo_intensity_ossz;
+
+
+        //}
+        private void kivalaszt_kiir()
+        {
+
+            int kivalaszt = int.Parse(comboBox.Text);
+            Eredmenyek kiv = Program.eredmeny.Find(a => a.Ei == kivalaszt);
+            textBox_Ei_eredmenyei.Text = $"Ei:{kiv.Ei} \tJpi_i:{kiv.Jpi_i}\r\n ";
+            textBox_Ei_eredmenyei.Text += $"\r\n";
+            textBox_Ei_eredmenyei.Text += $"Konklúzió:{kiv.Intenzitas_eredmeny_osszegzes}\r\n";
+            textBox_Ei_eredmenyei.Text += $"\r\n";
+            textBox_Ei_eredmenyei.Text += $"Intenzitás különbség:{kiv.Kulonbseg}\r\n";
+            textBox_Ei_eredmenyei.Text += $"\r\n";
+            textBox_Ei_eredmenyei.Text += $"\r\n";
+            textBox_Ei_eredmenyei.Text += $"Elfolyó gamma-sugárzás:\r\n ";
+            foreach (Folyo item in kiv.Elfolyok)
+            {
+                textBox_Ei_eredmenyei.Text += $"\tEnergia:{item.Energy}, Intenzitás:{item.Intensity}\r\n ";
+            }
+            textBox_Ei_eredmenyei.Text += $"\tIntenzitás összeg:{kiv.Elfolyo_intensity_ossz}\r\n ";
+            textBox_Ei_eredmenyei.Text += $"\r\n";
+
+            textBox_Ei_eredmenyei.Text += $"Ráfolyó gamma-sugárzás:\r\n ";
+            foreach (Folyo item in kiv.Rafolyok)
+            {
+                textBox_Ei_eredmenyei.Text += $"\tEnergia:{item.Energy}, Intenzitás:{item.Intensity}\r\n ";
+            }
+            textBox_Ei_eredmenyei.Text += $"\tIntenzitás összeg:{kiv.Rafolyo_intensity_ossz}\r\n ";
+            
+            
+        }           //metódus?
 
         private void button_letolt_Click(object sender, EventArgs e)
         {
-           /* 
-            if(saveFileDialog1.ShowDialog()==DialogResult.OK)
+          
+            if (saveFileDialog1.ShowDialog()==DialogResult.OK)
             {
-                string eredmeny = saveFileDialog1.FileName;
-                using (StreamWriter wr = new StreamWriter(eredmeny,Encoding.UTF8))
+                Stream stream = saveFileDialog1.OpenFile();
+
+                StreamWriter wr = new StreamWriter(stream);
+                int kivalaszt = int.Parse(comboBox.Text);
+                Eredmenyek kiv = Program.eredmeny.Find(a => a.Ei == kivalaszt);
+
+                wr.WriteLine("Nívószint:" + kiv.Ei);
+                wr.WriteLine("Nívószint spin-paritás értéke:" + kiv.Jpi_i);
+                wr.WriteLine("Intenzitás összegek Különbsége:" + kiv.Kulonbseg);
+                wr.WriteLine("Konklúzió:" + kiv.Intenzitas_eredmeny_osszegzes);
+                wr.WriteLine("\n");
+               
+                foreach (Folyo item in kiv.Elfolyok)
                 {
-                    while(wr!=Program.eredmeny2.Count)
-                    wr.WriteLine("{0} {1}",Program.eredmeny, Program.eredmeny);
-
+                    wr.Write("Energia: {0}\t", item.Energy);
+                    wr.Write("Intenzitás: {0}\t", item.Intensity);
+                    wr.WriteLine("\n");
                 }
+                wr.WriteLine("Elfolyó intenzitások összege:" + kiv.Elfolyo_intensity_ossz);
+                foreach (Folyo item in kiv.Rafolyok)
+                {
+                    wr.Write("Energia: {0}\t", item.Energy);
+                    wr.Write("Intenzitás: {0}\t", item.Intensity);
+                    wr.WriteLine("\n");
+                }
+                wr.WriteLine("Ráfolyó intenzitások összege:" +kiv.Rafolyo_intensity_ossz);
 
-            }*/
+                wr.Close();
+                stream.Close();
+                
+            }
+        }
+
+        private void textBox_Ei_eredmenyei_TextChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void button_mind_Click(object sender, EventArgs e)
+        {         
+                Program.form_eredmeny.ShowDialog();
         }
     }
+    
         
 }

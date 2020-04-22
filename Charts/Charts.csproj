@@ -49,7 +49,12 @@
   <ItemGroup>
     <Compile Include="Energiaszintek.cs" />
     <Compile Include="Eredmenyek.cs" />
-    <Compile Include="Eredmenyek2.cs" />
+    <Compile Include="Form2_Osszeseredmeny.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form2_Osszeseredmeny.Designer.cs">
+      <DependentUpon>Form2_Osszeseredmeny.cs</DependentUpon>
+    </Compile>
     <Compile Include="Form_Levels.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -65,6 +70,10 @@
     <Compile Include="Levels.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Folyo.cs" />
+    <EmbeddedResource Include="Form2_Osszeseredmeny.resx">
+      <DependentUpon>Form2_Osszeseredmeny.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Form_Levels.resx">
       <DependentUpon>Form_Levels.cs</DependentUpon>
     </EmbeddedResource>
@@ -84,7 +93,11 @@
     <None Include="105Pd.dat" />
     <None Include="105Pd_tj3.dat" />
     <None Include="134Pr.dat" />
-    <None Include="adatok.csv" />
+    <None Include="ClassDiagram1.cd" />
+    <None Include="ClassDiagram2.cd" />
+    <None Include="ClassDiagram3.cd" />
+    <None Include="ClassDiagram4.cd" />
+    <None Include="ClassDiagram5.cd" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
